@@ -20,9 +20,6 @@
 //safe si transfer delay in between calls
 #define SI_TRANS_DELAY 50
 
-extern u8 sidthekid_gba[];
-extern u32 sidthekid_gba_size;
-
 u8 *resbuf,*cmdbuf;
 
 volatile u32 transval = 0;
@@ -202,7 +199,7 @@ int main(int argc, char *argv[])
 		{
 			printf("\x1b[2J");
 			printf("\x1b[37m");
-			printf("GBA Link Cable ROM Sender v1.0 by FIX94\n");
+			printf("GBA Link Cable ROM Sender v1.1 by FIX94\n");
 			printf("Select GBA ROM file\n");
 			printf("<< %s >>\n",names[i].name);
 			PAD_ScanPads();
@@ -260,6 +257,16 @@ int main(int argc, char *argv[])
 		}
 		fread(gbaBuf,gbaSize,1,f);
 		fclose(f);
+		if(*(u32*)(gbaBuf+0xE4) == 0x0010A0E3 && *(u32*)(gbaBuf+0xEC) == 0xC010A0E3 &&
+			*(u32*)(gbaBuf+0x100) == 0xFCFFFF1A && *(u32*)(gbaBuf+0x118) == 0x040050E3 &&
+			*(u32*)(gbaBuf+0x11C) == 0xFBFFFF1A && *(u32*)(gbaBuf+0x12C) == 0x020050E3 &&
+			*(u32*)(gbaBuf+0x130) == 0xFBFFFF1A && *(u32*)(gbaBuf+0x140) == 0xFEFFFF1A)
+		{
+			printf("Gamecube multiboot rom, patching entry point\n");
+			//jump over joyboot handshake
+			*(u32*)(gbaBuf+0xE0) = 0x170000EA;
+		}
+
 		printf("Waiting for GBA in port 2...\n");
 		resval = 0;
 
