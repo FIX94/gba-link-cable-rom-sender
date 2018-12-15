@@ -130,6 +130,14 @@ int compare (const void * a, const void * b ) {
   return strcmp((*(gbNames*)a).name, (*(gbNames*)b).name);
 }
 
+static const u32 logodat[39] = {
+ 0x24FFAE51, 0x699AA221, 0x3D84820A, 0x84E409AD, 0x11248B98, 0xC0817F21, 0xA352BE19, 0x9309CE20, 
+ 0x10464A4A, 0xF82731EC, 0x58C7E833, 0x82E3CEBF, 0x85F4DF94, 0xCE4B09C1, 0x94568AC0, 0x1372A7FC, 
+ 0x9F844D73, 0xA3CA9A61, 0x5897A327, 0xFC039876, 0x231DC761, 0x0304AE56, 0xBF388400, 0x40A70EFD, 
+ 0xFF52FE03, 0x6F9530F1, 0x97FBC085, 0x60D68025, 0xA963BE03, 0x014E38E2, 0xF9A234FF, 0xBB3E0344, 
+ 0x780090CB, 0x88113A94, 0x65C07C63, 0x87F03CAF, 0xD625E48B, 0x380AAC72, 0x21D4F807
+};
+
 int main(int argc, char *argv[]) 
 {
 	void *xfb = NULL;
@@ -199,7 +207,7 @@ int main(int argc, char *argv[])
 		{
 			printf("\x1b[2J");
 			printf("\x1b[37m");
-			printf("GBA Link Cable ROM Sender v1.1 by FIX94\n");
+			printf("GBA Link Cable ROM Sender v1.2 by FIX94\n");
 			printf("Select GBA ROM file\n");
 			printf("<< %s >>\n",names[i].name);
 			PAD_ScanPads();
@@ -257,6 +265,25 @@ int main(int argc, char *argv[])
 		}
 		fread(gbaBuf,gbaSize,1,f);
 		fclose(f);
+		if(memcmp(gbaBuf+4, logodat, sizeof(logodat)) != 0)
+		{
+			printf("GBA header logo broken! Fixing logo\n");
+			memcpy(gbaBuf+4, logodat, sizeof(logodat));
+		}
+		if(gbaBuf[0xB2] != 0x96)
+		{
+			printf("GBA header value incorrect (0x%02X)! Fixing value (0x96)\n", gbaBuf[0xB2]);
+			gbaBuf[0xB2] = 0x96;
+		}
+		u8 chk = 0;
+		for(i = 0xA0; i < 0xBD; i++)
+			chk -= gbaBuf[i];
+		chk -= 0x19;
+		if(gbaBuf[0xBD] != chk)
+		{
+			printf("GBA header checksum incorrect (0x%02X)! Fixing checksum (0x%02X)\n", gbaBuf[0xBD], chk);
+			gbaBuf[0xBD] = chk;
+		}
 		if(*(u32*)(gbaBuf+0xE4) == 0x0010A0E3 && *(u32*)(gbaBuf+0xEC) == 0xC010A0E3 &&
 			*(u32*)(gbaBuf+0x100) == 0xFCFFFF1A && *(u32*)(gbaBuf+0x118) == 0x040050E3 &&
 			*(u32*)(gbaBuf+0x11C) == 0xFBFFFF1A && *(u32*)(gbaBuf+0x12C) == 0x020050E3 &&
